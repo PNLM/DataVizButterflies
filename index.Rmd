@@ -19,6 +19,7 @@ library(leaflet)
 library(dplyr)
 library(ggplot2)
 library(hrbrthemes)
+library(plotly)
 
 dataset <- read_delim("data_chunk.csv", 
     "\t", escape_double = FALSE, trim_ws = TRUE, 
@@ -31,15 +32,15 @@ Le jeu de données analysé est le résultat du UK Butterfly Monitoring Scheme, 
 Le jeu de données est accessible depuis le lien suivant :
 http://api.gbif.org/v1/occurrence/download/request/0001358-190415153152247.zip
 
-En raison du poids de ce dernier (2.5 Go pour près de 6 millions de lignes, de quoi mettre à genoux nos pauvres machines pour générer la carte...), seule une fraction (les 100 000 premières lignes) en a été utilisée.
+En raison du poids de ce dernier (2.5 Go pour près de 6 millions de lignes, de quoi mettre à genoux nos pauvres machines pour générer la carte interactive, notamment sur le html accessible via github...), seule une fraction (les 100 000 premières lignes) en a été utilisée.
 
 
 GBIF.org (18th April 2019) GBIF Occurrence Download https://doi.org/10.15468/dl.nzyl42
 
 
-## Répartition des occurences
+## Répartition géographique des occurences
 
-La carte interactive ci-dessous présente les 
+La carte interactive ci-dessous présente les localisations des différentes occurences d'espèces. La couleur varie en fonction de l'année d'observation (plus l'observation est récente, plus la couleur est foncée).
 
 ```{r map, echo=FALSE,warning=FALSE}
 Latitude = c(dataset$decimalLatitude)
@@ -47,6 +48,7 @@ Longitude =c(dataset$decimalLongitude)
 year = dataset$year
 species = dataset$species
 ladate= dataset$eventDate
+couleurs <- colorNumeric("YlOrRd", dataset$year, n = 10)
 
 ```
 
@@ -55,26 +57,37 @@ m<-leaflet(dataset) %>%
   addTiles() %>%
   
   addCircles(lng=~Longitude,lat =~Latitude,
-                  color="#a500a5", opacity = 0.01) 
+                  color=~couleurs(year), opacity = 0.3)%>%
+    addLegend(pal = couleurs, values = ~year, opacity = 0.9)
 
 m
+
 ```
 
 
+## Répartition temporelle des occurences
+
+Ce graphique présente le nombre d'observations réalisées chaque année.
+
 ```{r graph1,warning=FALSE}
-ggplot(dataset,aes(x=year)) +
+g1<-ggplot(dataset,aes(x=year)) +
  geom_line(stat="count",color="#69b3a2",linetype = "solid") +
 ggtitle("Occurences par an") +
   xlab("Année") +
   ylab("Nombre d'occurrences") +
 theme_ipsum()
+ggplotly(g1)
 
 ```
 
+## Espèces les plus observées
+
+Le graphe suivant présente les espèces de papillons ayant connu le plus d'observations depuis la mise en place du programme.
 
 ```{r graph2,warning=FALSE}
-ggplot(dataset %>% group_by(species) %>% filter(n() > 100), aes(x=species)) +
+g2<-ggplot(dataset %>% group_by(species) %>% filter(n() > 100), aes(x=species)) +
 geom_histogram(stat="count",fill="skyblue1") +
-ggtitle("Occurences par espèce (au moins 3500 occurences)")+
+ggtitle("Occurences par espèce (au moins 100 occurences)")+
   theme_ipsum()
+ggplotly(g2)
 ```
