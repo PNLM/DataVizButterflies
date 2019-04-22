@@ -73,7 +73,7 @@ theme_ipsum()
 
 
 ```{r graph2,warning=FALSE}
-ggplot(dataset %>% group_by(species) %>% filter(n() > 3500), aes(x=species)) +
+ggplot(dataset %>% group_by(species) %>% filter(n() > 100), aes(x=species)) +
 geom_histogram(stat="count",fill="skyblue1") +
 ggtitle("Occurences par espèce (au moins 3500 occurences)")+
   theme_ipsum()
