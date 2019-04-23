@@ -2,13 +2,16 @@
 title: "Data Visualisation Project"
 author: "PNL & co"
 date: "22/04/2019"
-output: html_document
+output: 
+  epuRate::PCTG:
+    toc: FALSE
+    number_sections: FALSE
+    code_folding: "hide"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 
 ```{r,include=FALSE,warning=FALSE}
@@ -42,7 +45,7 @@ http://api.gbif.org/v1/occurrence/download/request/0001358-190415153152247.zip
 
 En raison du poids de ce dernier (2.5 Go pour près de 6 millions de lignes, de quoi mettre à genoux nos pauvres machines pour générer la carte interactive, notamment sur le html accessible via github...), seule une fraction (les 2500 premières lignes) en a été utilisée.
 
-
+Références :
 GBIF.org (18th April 2019) GBIF Occurrence Download https://doi.org/10.15468/dl.nzyl42
 
 
