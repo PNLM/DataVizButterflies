@@ -91,9 +91,9 @@ g1<-ggplot(dataset,aes(x=year)) +
  geom_line(stat="count",color="#69b3a2") +
   
 # Titre et légende des axes  
-ggtitle("Occurrences par an") +
+ggtitle("Relevés par an") +
   xlab("Année") +
-  ylab("Nombre d'occurrences") +
+  ylab("Nombre de relevés") +
   
 # Définition du theme  
 theme_ipsum()
