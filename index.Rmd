@@ -12,6 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r,include=FALSE,warning=FALSE}
+
+# Chargement des différentes bibliothèques utilisées
 library(dygraphs)
 library(xts) 
 library(readr)
@@ -21,7 +23,13 @@ library(ggplot2)
 library(hrbrthemes)
 library(plotly)
 
+# Chargement du dataset (ainsi qu'une copie utilisée plus tard)
+
 dataset <- read_delim("data_chunk.csv", 
+    "\t", escape_double = FALSE, trim_ws = TRUE, 
+    skip = 1)
+
+datasetcopy <- read_delim("data_chunk.csv", 
     "\t", escape_double = FALSE, trim_ws = TRUE, 
     skip = 1)
 ```
@@ -32,7 +40,7 @@ Le jeu de données analysé est le résultat du UK Butterfly Monitoring Scheme, 
 Le jeu de données est accessible depuis le lien suivant :
 http://api.gbif.org/v1/occurrence/download/request/0001358-190415153152247.zip
 
-En raison du poids de ce dernier (2.5 Go pour près de 6 millions de lignes, de quoi mettre à genoux nos pauvres machines pour générer la carte interactive, notamment sur le html accessible via github...), seule une fraction (les 100 000 premières lignes) en a été utilisée.
+En raison du poids de ce dernier (2.5 Go pour près de 6 millions de lignes, de quoi mettre à genoux nos pauvres machines pour générer la carte interactive, notamment sur le html accessible via github...), seule une fraction (les 2500 premières lignes) en a été utilisée.
 
 
 GBIF.org (18th April 2019) GBIF Occurrence Download https://doi.org/10.15468/dl.nzyl42
@@ -40,26 +48,29 @@ GBIF.org (18th April 2019) GBIF Occurrence Download https://doi.org/10.15468/dl.
 
 ## Répartition géographique des occurences
 
-La carte interactive ci-dessous présente les localisations des différentes occurences d'espèces. La couleur varie en fonction de l'année d'observation (plus l'observation est récente, plus la couleur est foncée).
+La carte interactive ci-dessous présente les localisations des différentes occurrences d'espèces. La couleur varie en fonction de l'année d'observation (plus l'observation est récente, plus la couleur est foncée).
+Un graphe de type "leaflet" est particulièrement adéquat pour ce dataset puisqu'il prend en argument les listes des latitudes et des longitudes.
 
 ```{r map, echo=FALSE,warning=FALSE}
 Latitude = c(dataset$decimalLatitude)
 Longitude =c(dataset$decimalLongitude)
 year = dataset$year
 species = dataset$species
-ladate= dataset$eventDate
+family=dataset$family
+
+# On attribue une couleur différente aux points selon l'année d'observation
 couleurs <- colorNumeric("YlOrRd", dataset$year, n = 10)
 
 ```
 
 ```{r}
+
+# Utilisation du module leaflet
 m<-leaflet(dataset) %>%
   addTiles() %>%
-  
   addCircles(lng=~Longitude,lat =~Latitude,
                   color=~couleurs(year), opacity = 0.3)%>%
     addLegend(pal = couleurs, values = ~year, opacity = 0.9)
-
 m
 
 ```
@@ -68,26 +79,81 @@ m
 ## Répartition temporelle des occurences
 
 Ce graphique présente le nombre d'observations réalisées chaque année.
+L'utilisation du graphe "geom_line" permet de mettre rapidement en évidence la forte augmentation du nombre d'observations entre 1973 et 2015 : il apparaît ainsi peu pertinent de comparer les occurrences par espèce entre 1973 (une seule occurence au total) et 2015 (178) !
 
 ```{r graph1,warning=FALSE}
+
 g1<-ggplot(dataset,aes(x=year)) +
- geom_line(stat="count",color="#69b3a2",linetype = "solid") +
-ggtitle("Occurences par an") +
+ geom_line(stat="count",color="#69b3a2") +
+  
+# Titre et légende des axes  
+ggtitle("Occurrences par an") +
   xlab("Année") +
   ylab("Nombre d'occurrences") +
+  
+# Définition du theme  
 theme_ipsum()
+
+# Plotly permet d'afficher des graphes interactifs
 ggplotly(g1)
 
 ```
 
 ## Espèces les plus observées
 
-Le graphe suivant présente les espèces de papillons ayant connu le plus d'observations depuis la mise en place du programme.
+Le graphe suivant compare, pour les espèces de papillons ayant connu le plus d'observations sur toute la durée du programme, leur nombre d'occurrences en 1995 puis en 2015.
+Le graphe "geom_bar" permet d'afficher la famille de papillon correspondant à chaque espèce en plus d'assurer une comparaison rapide.
 
 ```{r graph2,warning=FALSE}
-g2<-ggplot(dataset %>% group_by(species) %>% filter(n() > 100), aes(x=species)) +
-geom_histogram(stat="count",fill="skyblue1") +
-ggtitle("Occurences par espèce (au moins 100 occurences)")+
-  theme_ipsum()
-ggplotly(g2)
+
+# Résultats de 1995 : on filtre le dataset en retenant les espèces globalement les plus présentes("n()>75") et celles résultats de 1995 ("year==1995")
+g2 <- dataset %>%
+group_by(species) %>% filter(n() > 75)%>% filter(year==1995)  %>% filter(species!='null') %>%
+
+# On colorie chaque barre en fonction de la famille de l'espèce
+  
+ggplot(aes(x=species,fill=family)) +
+geom_bar(stat="count") +
+  
+# On fait en sorte que l'échelle soit la même pour les deux graphes
+scale_y_continuous(limits = c(0,20), breaks = seq(0, 20, 10)) + 
+ggtitle("Occurrences par espèce en 1995")+
+theme_ipsum()+
+
+#On cache la légende pour ne pas faire doublon avec le graphe suivant 
+theme(legend.position ="none")+
+
+# On inverse les coordonnées pour rendre lisible la légende (nom de l'espèce)
+coord_flip()
+
 ```
+
+```{r,warning=FALSE}
+
+# Même démarche pour les résultats de 2015.
+
+# Pour des raisons esthétiques, le graphe sera trié par nombre d'occurrences. Ce tri a été effectué manuellement a posteriori (le décompte d'occurrences n'étant pas une variable du tableau, c'est la seule solution que nous avons pu mettre en place... )
+
+order=c('Maniola jurtina','Pararge aegeria','Aphantopus hyperantus','Polyommatus icarus','Pieris rapae','Pieris brassicae', 'Aglais io', 'Pyronia tithonus','Pieris napi','Gonepteryx rhamni', 'Coenonympha pamphilus' )
+
+datasetcopy$species <- factor(datasetcopy$species, levels=order)
+
+g3<-datasetcopy %>% group_by(species) %>% filter(n() >75)%>% filter(year==2015)%>%filter(species!='null') %>%
+ggplot( aes(species,fill=family)) +
+geom_bar(stat="count") +
+ggtitle("Occurrences par espèce en 1995 puis en 2015")+
+theme_ipsum()+
+coord_flip()
+
+
+```
+
+```{r,warning=FALSE}
+#subplot permet d'afficher les deux graphes côte à côte
+
+subplot(g2,g3,shareX = FALSE, shareY = FALSE, margin =0.2)  
+
+```
+
+
+
