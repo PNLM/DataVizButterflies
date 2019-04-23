@@ -32,13 +32,14 @@ dataset <- read_delim("data_chunk.csv",
     "\t", escape_double = FALSE, trim_ws = TRUE, 
     skip = 1)
 
-datasetcopy <- read_delim("data_chunk.csv", 
+datasetc1 <- read_delim("data_chunk.csv", 
     "\t", escape_double = FALSE, trim_ws = TRUE, 
     skip = 1)
+
 ```
 
 
-Le jeu de données analysé est le résultat du UK Butterfly Monitoring Scheme, une démarche qui comme son nom l'indique vise à surveiller l'évolution des populations de papillons au Royaume-Uni. Les observations qui y sont recueillies balaient une préiode allant de 1973 à 2015.
+Le jeu de données analysé est le résultat du UK Butterfly Monitoring Scheme, une démarche qui comme son nom l'indique vise à surveiller l'évolution des populations de papillons au Royaume-Uni. Les observations qui y sont recueillies balaient une période allant de 1973 à 2015.
 
 Le jeu de données est accessible depuis le lien suivant :
 http://api.gbif.org/v1/occurrence/download/request/0001358-190415153152247.zip
@@ -46,8 +47,8 @@ http://api.gbif.org/v1/occurrence/download/request/0001358-190415153152247.zip
 En raison du poids de ce dernier (2.5 Go pour près de 6 millions de lignes, de quoi mettre à genoux nos pauvres machines pour générer la carte interactive, notamment sur le html accessible via github...), seule une fraction (les 2500 premières lignes) en a été utilisée.
 
 Références :
-GBIF.org (18th April 2019) GBIF Occurrence Download https://doi.org/10.15468/dl.nzyl42
 
+GBIF.org (18th April 2019) GBIF Occurrence Download https://doi.org/10.15468/dl.nzyl42
 
 ## Répartition géographique des occurences
 
@@ -105,12 +106,22 @@ ggplotly(g1)
 ## Espèces les plus observées
 
 Le graphe suivant compare, pour les espèces de papillons ayant connu le plus d'observations sur toute la durée du programme, leur nombre d'occurrences en 1995 puis en 2015.
-Le graphe "geom_bar" permet d'afficher la famille de papillon correspondant à chaque espèce en plus d'assurer une comparaison rapide.
+Le graphe "geom_bar" permet d'afficher la famille de papillons correspondant à chaque espèce en plus d'assurer une comparaison rapide.
 
 ```{r graph2,warning=FALSE}
 
-# Résultats de 1995 : on filtre le dataset en retenant les espèces globalement les plus présentes("n()>75") et celles résultats de 1995 ("year==1995")
-g2 <- dataset %>%
+# Résultats de 1995 
+
+
+# Le graphe sera trié par nombre d'occurrences. Ce tri a été effectué manuellement a posteriori (le décompte d'occurrences n'étant pas une variable du tableau, c'est la seule solution que nous avons pu mettre en place... )
+
+order95=c('Maniola jurtina','Aglais io','Pararge aegeria','Aphantopus hyperantus', 'Pyronia tithonus','Polyommatus icarus','Pieris rapae','Pieris brassicae','Gonepteryx rhamni', 'Coenonympha pamphilus','Pieris napi' )
+
+datasetc1$species <- factor(datasetc1$species, levels=order95)
+
+# On filtre le dataset en retenant les espèces globalement les plus présentes("n()>75") et celles résultats de 1995 ("year==1995")
+
+g2 <- datasetc1 %>%
 group_by(species) %>% filter(n() > 75)%>% filter(year==1995)  %>% filter(species!='null') %>%
 
 # On colorie chaque barre en fonction de la famille de l'espèce
@@ -135,16 +146,14 @@ coord_flip()
 
 # Même démarche pour les résultats de 2015.
 
-# Pour des raisons esthétiques, le graphe sera trié par nombre d'occurrences. Ce tri a été effectué manuellement a posteriori (le décompte d'occurrences n'étant pas une variable du tableau, c'est la seule solution que nous avons pu mettre en place... )
+order15=c('Maniola jurtina','Pararge aegeria','Aphantopus hyperantus','Polyommatus icarus','Pieris rapae','Pieris brassicae', 'Aglais io', 'Pyronia tithonus','Pieris napi','Gonepteryx rhamni', 'Coenonympha pamphilus' )
 
-order=c('Maniola jurtina','Pararge aegeria','Aphantopus hyperantus','Polyommatus icarus','Pieris rapae','Pieris brassicae', 'Aglais io', 'Pyronia tithonus','Pieris napi','Gonepteryx rhamni', 'Coenonympha pamphilus' )
+datasetc1$species <- factor(datasetc1$species, levels=order15)
 
-datasetcopy$species <- factor(datasetcopy$species, levels=order)
-
-g3<-datasetcopy %>% group_by(species) %>% filter(n() >75)%>% filter(year==2015)%>%filter(species!='null') %>%
+g3<-datasetc1 %>% group_by(species) %>% filter(n() >75)%>% filter(year==2015)%>%filter(species!='null') %>%
 ggplot( aes(species,fill=family)) +
 geom_bar(stat="count") +
-ggtitle("Occurrences par espèce en 1995 puis en 2015")+
+ggtitle("Relevés par espèce en 1995 puis en 2015")+
 theme_ipsum()+
 coord_flip()
 
